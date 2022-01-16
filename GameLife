@@ -1,0 +1,133 @@
+import pygame
+import sys
+import random
+
+
+class Cell:
+
+    def __init__(self, ix, iy, is_live):
+        self.ix = ix
+        self.iy = iy
+        self.is_live = is_live
+        self.neighbour_count = 0
+
+
+    def calc_neighbour_count(self):
+        count = 0
+        pre_x = self.ix - 1 if self.ix > 0 else 0
+        for i in range(pre_x,
+                       self.ix + 1 + 1):
+            pre_y = self.iy - 1 if self.iy > 0 else 0
+            for j in range(pre_y,
+                           self.iy + 1 + 1):
+                if i == self.ix and j == self.iy:
+                    continue
+                if self.invalidate(i, j):
+                    continue
+                count += int(CellGrid.cells[i][j].is_live)
+        self.neighbour_count = count
+        return count
+
+    def invalidate(self, x, y):
+        if x >= CellGrid.cx or y >= CellGrid.cy:
+            return True
+        if x < 0 or y < 0:
+            return True
+        return False
+
+    def rule(self):
+        if self.neighbour_count > 3 or self.neighbour_count < 2:
+            self.is_live = False
+        elif self.neighbour_count == 3:
+            self.is_live = True
+        elif self.neighbour_count == 2:
+            pass
+
+
+class CellGrid:
+    cells = []
+    cx = 0
+    cy = 0
+
+    def __init__(self, cx, cy):
+        CellGrid.cx = cx
+        CellGrid.cy = cy
+        for i in range(cx):
+            cell_list = []
+            for j in range(cy):
+                cell = Cell(i, j, random.random() > 0.5)
+                cell_list.append(
+                    cell)
+            CellGrid.cells.append(
+                cell_list)
+
+    def circulate_rule(self):
+        for cell_list in CellGrid.cells:
+            for item in cell_list:
+                item.rule()
+
+    def circulate_nbcount(self):
+        for cell_list in CellGrid.cells:
+            for item in cell_list:
+                item.calc_neighbour_count()
+
+
+class Game:
+    screen = None
+
+    def __init__(self, width, height, cx, cy):
+        self.width = width
+        self.height = height
+        self.cx_rate = int((width - 2 * EDGE_WIDTH) / cx)
+        self.cy_rate = int((height - 2 * EDGE_WIDTH) / cy)
+        self.screen = pygame.display.set_mode([width, height])
+        self.cells = CellGrid(cx, cy)
+
+    def show_life(self):
+
+        for cell_list in self.cells.cells:
+            for item in cell_list:
+                x = item.ix
+                y = item.iy
+                if item.is_live:
+                    pygame.draw.rect(self.screen, LIFECOLOR,
+                                     [START_POSX + x * self.cx_rate,
+                                      START_POSY + y * self.cy_rate,
+                                      self.cx_rate, self.cy_rate])
+
+
+BG = (0, 0, 0)
+LIFECOLOR = (0, 200, 0)
+EDGE_WIDTH = 20
+START_POSX = 20
+START_POSY = 20
+
+
+def main():
+    pygame.init()
+    pygame.display.set_caption("Game of Life")
+    game = Game(440, 440, 20, 20)
+
+    clock = pygame.time.Clock()
+    while True:
+        game.screen.fill(BG)
+        clock.tick(1)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                sys.exit()
+
+        game.cells.circulate_nbcount()
+        game.cells.circulate_rule()
+
+        game.show_life()
+        pygame.display.flip()
+
+        for i in game.cells.cells:
+            txt = ""
+            for j in i:
+                txt += str(j)
+            print(txt)
+
+
+if __name__ == "__main__":
+    main()
